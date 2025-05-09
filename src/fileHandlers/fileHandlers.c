@@ -1,7 +1,7 @@
 // here we shall define procs for opening and closing files, as well as assigning the file to a string
 #include <stdlib.h>
 #include <stdio.h>
-
+#include <string.h>
 
 int openFile(FILE *textFile, char *filename){
     textFile = fopen(filename, "r");
@@ -20,4 +20,13 @@ int closeFile(FILE *textFile){
     fclose(textFile);
     // success
     return 1;
+}
+
+char *extractStringOfClauses(FILE *textFile){
+    char *output = NULL;
+    char buffer[1024];
+    // the file is supposed to have only one
+
+
+    return output;
 }
