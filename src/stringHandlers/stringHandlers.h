@@ -10,3 +10,7 @@ char **extractClauses(char *str);
 struct Clause *getVariables(char *Clause);
 
 void testClauses(char * clause);
+
+**generateClauses(char **clauses, int count);
+
+int setResolution(struct Clause **clauses, int count);

@@ -75,6 +75,8 @@ struct Clause *getVariables(char *clause){
     vars->clause = (char *)malloc(sizeof(char ) * n);
     strcpy(vars->clause, clause);
     vars->variables = (char **)malloc(sizeof(char *) * 26);
+    // init all strings to null
+    for(int i = 0; i < 26; i++) vars->variables[i] = NULL;
 
     // here we begin
     int negation = 0;
@@ -87,23 +89,68 @@ struct Clause *getVariables(char *clause){
             negation = 0;
             continue;
         } else {
-            vars->variables[Hash(clause[i])] = (char *)malloc(sizeof(char) * (negation == 1 ? 3 : 2));
-            //assign the string manually!!
-            // since the string won't have more than 2 chars, we can do this
-            if(!negation){
-                vars->variables[Hash(clause[i])][0] = clause[i];
-                vars->variables[Hash(clause[i])][1] = '\0';
+            printf("char %c, %d\n", clause[i], vars->variables[Hash(clause[i])] != NULL) ;
+            if(vars->variables[Hash(clause[i])] != NULL){
+
+                if(negation && vars->variables[Hash(clause[i])][0] != '!'){
+                   free(vars->variables[Hash(clause[i])]);
+                   vars->variables[Hash(clause[i])] = NULL;
+
+                } else if(!negation && vars->variables[Hash(clause[i])][0] == '!'){
+                    free(vars->variables[Hash(clause[i])]);
+                    vars->variables[Hash(clause[i])] = NULL;
+                    
+                } else {
+                    continue;
+                }
             } else {
-                vars->variables[Hash(clause[i])][0] = '!';
-                vars->variables[Hash(clause[i])][1] = clause[i];
-                vars->variables[Hash(clause[i])][2] = '\0';
+                vars->variables[Hash(clause[i])] = (char *)malloc(sizeof(char) * (negation == 1 ? 3 : 2));
+                //assign the string manually!!
+                // since the string won't have more than 2 chars, we can do this
+                if(!negation){
+                    vars->variables[Hash(clause[i])][0] = clause[i];
+                    vars->variables[Hash(clause[i])][1] = '\0';
+                } else {
+                    vars->variables[Hash(clause[i])][0] = '!';
+                    vars->variables[Hash(clause[i])][1] = clause[i];
+                    vars->variables[Hash(clause[i])][2] = '\0';
+                }
             }
+
         }
     }
     return vars;
 }
+struct Clause **generateClauses(char **clauses, int count){
+
+    struct Clause **output = (struct Clause **)malloc(sizeof(struct Clause *) * count);
+    for(int i = 0; i < count; i++){
+        output[i] = getVariables(clauses[i]);
+    }
+
+    return output;
+}
+
+// after getting the array of clauses, we can start doing resolutions
+
+
 
 void testClauses(char * clause){
     struct Clause *out = getVariables(clause);
-    printf("%s, %s", out->variables[0], out->variables[1]);
+    printf("clause: %s\n", out->clause);
+    for(int i = 0; i < 26; i++){
+        if(out->variables[i] != NULL){
+            printf("%d %s\n",i, out->variables[i]);
+        }
+    }
+}
+
+
+int setResolution(struct Clause **clauses, int count){
+    // iteratively try to find resoltions, until we find a valid clause or run into 0 resolutions
+    int resCount = 0;
+
+
+    
+    return 0;
 }
