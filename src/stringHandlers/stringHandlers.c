@@ -3,14 +3,27 @@
 #include <string.h>
 
 
-    // define a structure with a table that includes all ascii's of the chars, we need ahashmap for that
-    typedef struct Clause{
-        char *clause;
-        char **variables;
-    }Clause;
+// define a structure with a table that includes all ascii's of the chars, we need ahashmap for that
+typedef struct Clause{
+    char *clause;
+    char **variables;
+}Clause;
 
+// helper functions are here
 int Hash(char c){
     return c - 'A';
+}
+
+void editClause(char **variable, char *prop, char *clause, int index){
+    (*variable) = (char *)malloc(sizeof(char) * (strlen(prop) + 1));
+    strcpy(*variable, prop);
+    // matter of string manipulation
+    if(index == 0){
+        strcat(clause, prop);
+    } else {
+        strcat(clause, "|");
+        strcat(clause, prop);
+    }
 }
 
 int getClauseCount(char *clauses){
@@ -68,6 +81,19 @@ char **extractClauses(char *str){
     return clauses;
 }
 
+void freeClause(struct Clause *clause){
+    // free the clause
+    free(clause->clause);
+    // free the variables
+    for(int i = 0; i < 26; i++){
+        if(clause->variables[i] != NULL){
+            free(clause->variables[i]);
+        }
+    }
+    free(clause->variables);
+    free(clause);
+}
+
 struct Clause *getVariables(char *clause){
     int n = strlen(clause);
     // initializations here
@@ -121,6 +147,8 @@ struct Clause *getVariables(char *clause){
     }
     return vars;
 }
+
+
 struct Clause **generateClauses(char **clauses, int count){
 
     struct Clause **output = (struct Clause **)malloc(sizeof(struct Clause *) * count);
@@ -149,8 +177,93 @@ void testClauses(char * clause){
 int setResolution(struct Clause **clauses, int count){
     // iteratively try to find resoltions, until we find a valid clause or run into 0 resolutions
     int resCount = 0;
+    struct Clause **setOfClauses = generateClauses(clauses, count);
+    // length of the set of clauses
+    int resLen = count;
+    while(1){
+        resCount = 0;
+        int newSetCount = 0;
+        struct Clause **newSetOfClauses = NULL;
+        for(int i = 0; i < resLen; i++){
+            for(int j = i + 1; j < resLen; j++){
+                struct Clause *res = resolve(setOfClauses[i], setOfClauses[j]);
+                if(res != NULL){
+                    resCount += 1;
+                    if(strcmp(res->clause, "") == 0){
+                        // we arrived at a solution, now we need to free all the space we used and quit
+                        freeClause(res);
+                        for(int  k = 0; k < resLen; k++){
+                            freeClause(setOfClauses[k]);
+                        }
+                        return 1;
+                    }
+                    // in this case, we add the clause to the new set of clauses we are creating and will be used next
+                    struct Clause **temp = realloc(newSetOfClauses, sizeof(struct Clause *) *(newSetCount + 1));
+                    // verify if we failed to reallocate memory
+                    if(temp == NULL){
+                        // free all memory and quit with error code -1
+                        freeClause(res);
+                        for(int  k = 0; k < resLen; k++){
+                            freeClause(setOfClauses[k]);
+                        }
+                        return -1;
+                    }
+                    // assign the new pointer to the new Set of Clauses
+                    newSetOfClauses = temp;
+                    newSetOfClauses[newSetCount++] = res;
 
+                }
+            }
+        }
 
+        if(resCount == 0) break; // resolution failed, hence we leave and return false
+
+    }
     
     return 0;
 }
+
+
+
+struct Clause *resolve(struct Clause *clause1, struct Clause *clause2){
+    int cancellations = 0;
+    // this here will be temporary, if we don't resolve anything, we remove it!
+    struct Clause *res = (struct Clause *)malloc(sizeof(struct Clause));
+    res->clause = (char *)malloc(sizeof(char) * (strlen(clause1->clause) + strlen(clause2->clause)) + 1);
+    strcpy(res->clause, "");
+    for(int i = 0; i < 26; i++){
+        // if we have a single variable alone, we move it to the new clause
+        if(clause1->variables[i] == NULL && clause2->variables[i] != NULL){
+
+            editClause(&res->variables[i], clause2->variables[i], res->clause, i);
+
+        } else if(clause1->variables[i] != NULL && clause2->variables[i] == NULL){
+
+            editClause(&res->variables[i], clause1->variables[i], res->clause, i);
+
+        } else if(clause1->variables[i] != NULL && clause2->variables[i] != NULL){
+            // we have a cancellation here
+            cancellations += 1;
+        } else {
+            // here, both aren't null, then we have either the same variable or a opposites, here we check as follows
+            if(strlen(clause1->variables[i]) != strlen(clause2->variables[i])){
+                // we have a cancellation here
+                res->variables[i] = NULL; // so that this pointer is safe for checks and access later
+                cancellations += 1;
+            } else {
+                // same variable, should be treated the same way as when we are just copying
+                editClause(&res->variables[i], clause1->variables[i], res->clause, i);
+            }
+        }
+    }
+    if(cancellations == 0){
+        // free used space then quit
+        freeClause(res);
+        return NULL;
+    }
+
+    return res;
+}
+
+
+
