@@ -11,6 +11,12 @@ struct Clause *getVariables(char *Clause);
 
 void testClauses(char * clause);
 
-**generateClauses(char **clauses, int count);
+void freeClause(struct Clause *clause);
 
-int setResolution(struct Clause **clauses, int count);
+void editClause(char **variable, char *prop, char *clause, int index);
+
+struct Clause **generateClauses(char **clauses, int count);
+
+int setResolution(char **clauses, int count);
+
+struct Clause *resolve(struct Clause *clause1, struct Clause *clause2);

@@ -12,6 +12,6 @@ int main(){
     for(int i = 0; i < count ; i++){
         printf("%s\n", output[i]);
     } */
-    testClauses("A|!B|!A|C|!P");
+    testClauses("A|C&!A|!C");
     return 0;
 }
