@@ -20,3 +20,5 @@ struct Clause **generateClauses(char **clauses, int count);
 int setResolution(char **clauses, int count);
 
 struct Clause *resolve(struct Clause *clause1, struct Clause *clause2);
+
+int verifySet(char *str, int size);

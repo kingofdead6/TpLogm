@@ -2,7 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <windows.h>
-
+#include <time.h>
+#include <conio.h>
 // define a structure with a table that includes all ascii's of the chars, we need ahashmap for that
 typedef struct Clause{
     char *clause;
@@ -91,14 +92,18 @@ char **extractClauses(char *str){
 
 void freeClause(struct Clause *clause){
     // free the clause
-    free(clause->clause);
-    // free the variables
-    for(int i = 0; i < 26; i++){
-        if(clause->variables[i] != NULL){
-            free(clause->variables[i]);
+    if(clause == NULL) return ;
+    if(clause->variables != NULL){
+
+        if(clause->clause != NULL) free(clause->clause);
+        // free the variables
+        for(int i = 0; i < 26; i++){
+            if(clause->variables[i] != NULL){
+                free(clause->variables[i]);
+            }
         }
+        free(clause->variables);
     }
-    free(clause->variables);
     free(clause);
 }
 
@@ -169,7 +174,7 @@ struct Clause *resolve(struct Clause *clause1, struct Clause *clause2){
     int cancellations = 0;
     // this here will be temporary, if we don't resolve anything, we remove it!
     struct Clause *res = (struct Clause *)malloc(sizeof(struct Clause));
-    res->clause = (char *)malloc(sizeof(char) * (strlen(clause1->clause) + strlen(clause2->clause)) + 1);
+    res->clause = (char *)malloc(sizeof(char) * (strlen(clause1->clause) + strlen(clause2->clause)) + 2);
     res->variables = initVarsMap();
     strcpy(res->clause, "");
     for(int i = 0; i < 26; i++){
@@ -196,6 +201,7 @@ struct Clause *resolve(struct Clause *clause1, struct Clause *clause2){
     }
     if(cancellations == 0){
         // free used space then quit
+        printf("to free: %s\n", res->clause);
         freeClause(res);
         return NULL;
     }
@@ -204,8 +210,30 @@ struct Clause *resolve(struct Clause *clause1, struct Clause *clause2){
 }
 // after getting the array of clauses, we can start doing resolutions
 
+int setHas(struct Clause *clause, struct Clause **setOfClauses, int size ){
 
-
+    for(int i = 0; i < size; i++){
+        int equal = 1;
+        for(int j = 0; j < 26; j++){
+            if(clause->variables[j] == NULL && setOfClauses[i]->variables[j] != NULL){
+                equal = 0;
+                break;
+            }
+            else if(clause->variables[j] != NULL && setOfClauses[i]->variables[j] == NULL){
+                equal = 0;
+                break;
+            }
+            else if(clause->variables[j] != NULL && setOfClauses[i]->variables[j] != NULL){
+                if(strcmp(clause->variables[j], setOfClauses[i]->variables[j]) != 0){
+                    equal = 0;
+                    break;
+                }
+            }
+        }
+        if(equal == 1) return 1;
+    }
+    return 0;
+}
 
 
 
@@ -214,61 +242,107 @@ int setResolution(char **clauses, int count){
     struct Clause **setOfClauses = generateClauses(clauses, count);
     // length of the set of clauses
     int resLen = count;
+    int resolvedFrom = 0;
+    time_t begins = time(NULL);
     while(1){
         int resCount = 0;
         int newSetCount = 0;
         struct Clause **newSetOfClauses = NULL;
+
         for(int i = 0; i < resLen; i++){
+            resolvedFrom = 0;
+
             for(int j = i + 1; j < resLen; j++){
+
                 struct Clause *res = resolve(setOfClauses[i], setOfClauses[j]);
+
                 if(res != NULL){
                     resCount += 1;
+                    resolvedFrom += 1;
+
                     if(strcmp(res->clause, "") == 0){
                         // we arrived at a solution, now we need to free all the space we used and quit
+
                         freeClause(res);
+                        res = NULL;
                         for(int  k = 0; k < resLen; k++){
-                            freeClause(setOfClauses[k]);
+                            if(setOfClauses[k] != NULL){
+
+                                freeClause(setOfClauses[k]);
+                                setOfClauses[k] = NULL;    
+                            }
                         }
                         return 1;
                     }
-                    // in this case, we add the clause to the new set of clauses we are creating and will be used next
-                    // get rid of this clause, as we already used it
-                    freeClause(setOfClauses[i]);
-                    // pointers safety
-                    setOfClauses[i] = NULL;
-                    struct Clause **temp = realloc(newSetOfClauses, sizeof(struct Clause *) *(newSetCount + 1));
-                    // verify if we failed to reallocate memory
-                    if(temp == NULL){
-                        // free all memory and quit with error code -1
-                        freeClause(res);
-                        for(int  k = 0; k < resLen; k++){
-                            freeClause(setOfClauses[k]);
-                        }
-                        return -1;
-                    }
-                    // assign the new pointer to the new Set of Clauses
-                    newSetOfClauses = temp;
-                    newSetOfClauses[newSetCount++] = res;
+                    if(setHas(res, newSetOfClauses, newSetCount) == 0){
+                        printf("not present\n");
+                        // we assign the new clause to the new set, we only remove the ith clause after testing it against all the following clauses
+                        struct Clause **temp = realloc(newSetOfClauses, sizeof(struct Clause *) *(newSetCount + 1));
+                        // verify if we failed to reallocate memory
+                        if(temp == NULL){
+                            // free all memory and quit with error code -1
+                            if(res != NULL){
 
-                } else {
-                    // meaning we didn't find a resolution for this particular pair of clauses that make any resolution
-                    // I believe this part isn't necessary and we just have to continue , I will recheck this later
-                }
+                                res = NULL;
+                            }
+
+                            for(int  k = 0; k < resLen; k++){
+
+                                freeClause(setOfClauses[k]);
+                                setOfClauses[k] = NULL;
+                            }
+                            return -1;
+                        }
+                        // assign the new pointer to the new Set of Clauses
+                        newSetOfClauses = temp;
+                        newSetOfClauses[newSetCount++] = res;                        
+                        } else {
+                            freeClause(res);
+                            res = NULL;
+                        }
+
+                } 
+                // if we didn't find a resolution for this particular pair of clauses that make any resolution
+                // I believe this part isn't necessary and we just have to continue , I will recheck this later
+    
             }
-            if(setOfClauses[i] != NULL){
+            if(resolvedFrom != 0 || strlen(setOfClauses[i]->clause) <= 2){
                 // this means that this clause might be used in the next iteration
+                if(setHas(setOfClauses[i], newSetOfClauses, newSetCount) == 0){
+
                     struct Clause **temp = realloc(newSetOfClauses, sizeof(struct Clause *) *(newSetCount + 1));
                     // verify if we failed to reallocate memory
                     if(temp == NULL){
                         // free all memory and quit with error code -1
                         for(int  k = 0; k < resLen; k++){
-                            freeClause(setOfClauses[k]);
+                            if(setOfClauses[k] != NULL){
+                                printf("clause to free: %s\n", setOfClauses[k]->clause);
+                                Sleep(1000);
+                                freeClause(setOfClauses[k]);
+                            }
+                        }
+                        for(int k = 0; k < newSetCount; k++){
+                            if(newSetOfClauses[k] != NULL){
+
+                                freeClause(newSetOfClauses[k]);
+                            }
                         }
                         return -1;
                     }
                     // assign the new pointer to the new Set of Clauses
                     newSetOfClauses = temp;
                     newSetOfClauses[newSetCount++] = setOfClauses[i];
+                    setOfClauses[i] = NULL;
+                } else {
+
+                    freeClause(setOfClauses[i]);
+                    setOfClauses[i] = NULL;                    
+                }
+
+            } else {
+
+                freeClause(setOfClauses[i]);
+                setOfClauses[i] = NULL;
             }
         }
 
@@ -276,7 +350,20 @@ int setResolution(char **clauses, int count){
         free(setOfClauses);
         setOfClauses = newSetOfClauses;
         resLen = newSetCount;
+        
         newSetCount = 0;
+        time_t now = time(NULL);
+        if(now - begins >= 180){
+            MessageBeep(MB_ICONASTERISK);
+            MessageBox(NULL, "It looks like processing this set is taking too long, it might be due to the size, or just because we ran into an infinite loop","DISCLAIMER", MB_OK | MB_ICONEXCLAMATION);
+            
+            MessageBeep(MB_ICONASTERISK);
+            if(MessageBox(NULL, "Do you want to continue","Question", MB_YESNO) == IDNO){
+                return -1;
+            } else {
+                now = time(NULL);
+            }
+        }
     }
     
     return 0;
@@ -286,9 +373,14 @@ int setResolution(char **clauses, int count){
 
 void testClauses(char * clause){
     int size = getClauseCount(clause);
+    system("CLS");
     char **stringClauses = extractClauses(clause);
     struct Clause **out = generateClauses(stringClauses, size);
     int result = setResolution(stringClauses,size);
+    if(result == -1){
+        printf("Inner issue, try again later!\n");
+        return;
+    }
     system("CLS");
     printf("your set of Formulae S:\n{ \n");
     for(int i = 0; i < size; i++){
@@ -302,9 +394,20 @@ void testClauses(char * clause){
     }
 
 
-
+    printf("press \'q\' to quit\n");
+    char key = getch();
+    while(toupper(key) != 'Q'){
+        key = getch();
+    }
 }
 
-
-
-
+int verifySet(char *str, int size){
+    for(int i = 0; i < size; i++){
+        if(!(str[i] >= 'A' && str[i] <= 'Z')){
+            if(str[i] != '|' && str[i] != '!' && str[i] != '&' ){
+                return 0;
+            }
+        }
+    }
+    return 1;
+}

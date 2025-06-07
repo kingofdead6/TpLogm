@@ -3,9 +3,9 @@
 #include <stdio.h>
 #include <string.h>
 
-int openFile(FILE *textFile, char *filename){
-    textFile = fopen(filename, "r");
-    if(textFile == NULL){
+int openFile(FILE **textFile, char *filename){
+    *textFile = fopen(filename, "r");
+    if(*textFile == NULL){
         // file not found
         return -1;
     }
@@ -26,7 +26,9 @@ char *extractStringOfClauses(FILE *textFile){
     char *output = NULL;
     char buffer[1024];
     // the file is supposed to have only one
+    fgets(buffer,1024,textFile);
 
-
+    output = malloc(sizeof(char) * strlen(buffer));
+    strcpy(output, buffer);
     return output;
 }
