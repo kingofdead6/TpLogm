@@ -22,3 +22,11 @@ int setResolution(char **clauses, int count);
 struct Clause *resolve(struct Clause *clause1, struct Clause *clause2);
 
 int verifySet(char *str, int size);
+
+char* convertToCNF(char *formula);
+
+int verifySetWithConversion(char *str, int size) ;
+
+void displayCNF(char *formula) ;
+char* applyDeMorgan(char *expr);
+void displayCNFSteps(char *formula);
