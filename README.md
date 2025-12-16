@@ -1,6 +1,6 @@
 # SatiChecker - Resolution-Based SAT Solver
 
-[![SatiChecker Banner](https://via.placeholder.com/800x200/000000/FFFFFF?text=SatiChecker)](https://via.placeholder.com/)  
+
 *A user-friendly Windows console-based SAT solver for propositional logic satisfiability checking and CNF conversion, implemented in C.*
 
 ## Overview
