@@ -140,9 +140,6 @@ The project is organized into modular C files:
 - Cross-platform compatibility (Linux/Mac).
 - GUI version or web interface.
 
-## License
-MIT License - Feel free to use, modify, and distribute. See [LICENSE](LICENSE) for details.
-
 ## Contact
 For questions, reach out via the team members or open an issue on the repo.
 
